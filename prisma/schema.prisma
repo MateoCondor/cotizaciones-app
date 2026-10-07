@@ -1,0 +1,154 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────
+// AUTENTICACIÓN
+// ─────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Argon2 hash — NUNCA texto plano
+  nombre    String
+  rol       Rol      @default(USER)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum Rol {
+  ADMIN
+  USER
+}
+
+// ─────────────────────────────────────────
+// EMPRESA (registro único global)
+// ─────────────────────────────────────────
+
+model Empresa {
+  id            String   @id @default(cuid())
+  nombre        String
+  ruc           String   @unique
+  logoUrl       String?
+  logoNombre    String?  // Nombre UUID del archivo para seguridad
+  direccion     String?
+  telefono      String?
+  correo        String?
+  emisorNombre  String?
+  emisorCargo   String?
+  emisorCelular String?
+  updatedAt     DateTime @updatedAt
+
+  @@map("empresas")
+}
+
+// ─────────────────────────────────────────
+// CLIENTES
+// ─────────────────────────────────────────
+
+model Cliente {
+  id           String       @id @default(cuid())
+  nombre       String
+  rucCedula    String       @unique
+  direccion    String?
+  telefono     String?
+  correo       String?
+  activo       Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  cotizaciones Cotizacion[]
+
+  @@map("clientes")
+}
+
+// ─────────────────────────────────────────
+// PRODUCTOS
+// ─────────────────────────────────────────
+
+model Producto {
+  id             String           @id @default(cuid())
+  sku            String           @unique // Generado: PROD-XXXXXX
+  nombre         String
+  descripcion    String?
+  precioUnitario Decimal          @db.Decimal(10, 2)
+  ivaAplicable   Decimal          @db.Decimal(5, 2) // ej: 15.00 para 15%
+  activo         Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  items          ItemCotizacion[]
+
+  @@map("productos")
+}
+
+// ─────────────────────────────────────────
+// COTIZACIONES
+// ─────────────────────────────────────────
+
+model Cotizacion {
+  id               String           @id @default(cuid())
+  numero           String           @unique // COT-YYYY-NNNN
+  fechaEmision     DateTime         @default(now())
+  fechaVencimiento DateTime
+  estado           EstadoCotizacion @default(BORRADOR)
+  clienteId        String
+  cliente          Cliente          @relation(fields: [clienteId], references: [id])
+  condicionesPago  String?
+  plazoEntrega     String?
+  observaciones    String?
+  subtotal         Decimal          @db.Decimal(10, 2)
+  descuentoTotal   Decimal          @db.Decimal(10, 2) @default(0)
+  ivaTotal         Decimal          @db.Decimal(10, 2)
+  total            Decimal          @db.Decimal(10, 2)
+  items            ItemCotizacion[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@map("cotizaciones")
+}
+
+enum EstadoCotizacion {
+  BORRADOR
+  ENVIADA
+  ACEPTADA
+  RECHAZADA
+  VENCIDA
+}
+
+// ─────────────────────────────────────────
+// ITEMS DE COTIZACIÓN
+// ─────────────────────────────────────────
+
+model ItemCotizacion {
+  id             String        @id @default(cuid())
+  cotizacionId   String
+  cotizacion     Cotizacion    @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  productoId     String?
+  producto       Producto?     @relation(fields: [productoId], references: [id])
+  // Snapshot de datos al momento de crear la cotización
+  nombre         String
+  descripcion    String?
+  cantidad       Decimal       @db.Decimal(10, 2)
+  precioUnitario Decimal       @db.Decimal(10, 2)
+  descuento      Decimal       @db.Decimal(10, 2) @default(0)
+  tipoDescuento  TipoDescuento @default(PORCENTAJE)
+  iva            Decimal       @db.Decimal(5, 2)
+  subtotal       Decimal       @db.Decimal(10, 2)
+  orden          Int           @default(0)
+
+  @@map("items_cotizacion")
+}
+
+enum TipoDescuento {
+  PORCENTAJE
+  VALOR
+}
