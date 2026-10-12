@@ -16,7 +16,7 @@ export default async function EmpresaPage() {
 
   return (
     <div>
-      <div className="flex justify-content-between align-items-center mb-4">
+      <div className="flex justify-content-between align-items-center">
         <div>
           <h1 className="text-3xl font-bold m-0 text-900">Configuración de la Empresa</h1>
           <p className="text-600 mt-2">Gestiona los datos principales que aparecerán en los membretes de las cotizaciones.</p>

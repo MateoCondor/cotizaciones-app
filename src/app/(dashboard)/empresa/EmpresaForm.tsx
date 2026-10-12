@@ -47,8 +47,8 @@ export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
         <input type="hidden" name="removeLogo" value={removeLogo.toString()} />
 
         <div className="col-12 lg:col-8">
-          <div className="surface-card shadow-1 p-4 border-round mb-4">
-            <h5 className="text-xl font-bold mb-4 border-bottom-1 surface-border pb-3">Información General</h5>
+          <div className="surface-card shadow-1 px-4 pb-3 border-round mb-4">
+            <h5 className="text-xl font-bold mb-4 border-bottom-1 surface-border pb-3 pt-4">Información General</h5>
             <div className="grid formgrid">
               <div className="field col-12 md:col-6">
                 <label htmlFor="nombre" className="font-medium text-700">Razón Social / Nombre Comercial *</label>
@@ -73,8 +73,8 @@ export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
             </div>
           </div>
 
-          <div className="surface-card shadow-1 p-4 border-round">
-            <h5 className="text-xl font-bold mb-4 border-bottom-1 surface-border pb-3">Datos del Emisor</h5>
+          <div className="surface-card shadow-1 px-4 pb-3 border-round">
+            <h5 className="text-xl font-bold mb-4 border-bottom-1 surface-border pb-3 pt-4">Datos del Emisor</h5>
             <div className="grid formgrid">
               <div className="field col-12 md:col-4">
                 <label htmlFor="emisorNombre" className="font-medium text-700">Nombre del Emisor</label>
@@ -92,9 +92,9 @@ export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
           </div>
         </div>
 
-        <div className="col-12 lg:col-4">
-          <div className="surface-card shadow-1 p-4 border-round mb-4">
-            <h5 className="text-xl font-bold mb-4 border-bottom-1 surface-border pb-3">Logo de la Empresa</h5>
+        <div className="col-12 lg:col-4 lg:mt-0">
+          <div className="surface-card shadow-1 px-4 pb-3 border-round mb-4">
+            <h5 className="text-xl font-bold mb-4 border-bottom-1 surface-border pb-3 pt-4">Logo de la Empresa</h5>
             
             {/* Preview */}
             <div className="flex flex-column align-items-center justify-content-center mb-3">
