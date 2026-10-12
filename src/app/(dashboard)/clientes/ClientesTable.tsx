@@ -11,15 +11,16 @@ import { Tag } from "primereact/tag";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
 import { FilterMatchMode } from "primereact/api";
+import { SelectButton } from "primereact/selectbutton";
 import { Cliente } from "@prisma/client";
 import { saveCliente, toggleClienteStatus } from "./actions";
-import { ClienteFormData } from "@/lib/validations/cliente";
+import { ClienteFormData, esPasaporte } from "@/lib/validations/cliente";
 
 export function ClientesTable({ clientes }: { clientes: Cliente[] }) {
   const [clientesList, setClientesList] = useState<Cliente[]>(clientes);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<ClienteFormData>({ nombre: "", rucCedula: "", activo: true });
+  const [formData, setFormData] = useState<ClienteFormData>({ tipoIdentificacion: "NACIONAL", nombre: "", identificacion: "", activo: true });
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -36,15 +37,17 @@ export function ClientesTable({ clientes }: { clientes: Cliente[] }) {
   };
 
   const openNew = () => {
-    setFormData({ nombre: "", rucCedula: "", direccion: "", telefono: "", correo: "", activo: true });
+    setFormData({ tipoIdentificacion: "NACIONAL", nombre: "", identificacion: "", direccion: "", telefono: "", correo: "", activo: true });
     setDialogVisible(true);
   };
 
   const editCliente = (cliente: Cliente) => {
+    const esExtranjero = esPasaporte(cliente.identificacion);
     setFormData({
       id: cliente.id,
+      tipoIdentificacion: esExtranjero ? "PASAPORTE" : "NACIONAL",
       nombre: cliente.nombre,
-      rucCedula: cliente.rucCedula,
+      identificacion: cliente.identificacion,
       direccion: cliente.direccion || "",
       telefono: cliente.telefono || "",
       correo: cliente.correo || "",
@@ -106,12 +109,26 @@ export function ClientesTable({ clientes }: { clientes: Cliente[] }) {
     );
   };
 
+  const identificacionBodyTemplate = (rowData: Cliente) => {
+    const esExtranjero = esPasaporte(rowData.identificacion);
+    return (
+      <div className="flex align-items-center gap-2">
+        <span className="font-semibold">{rowData.identificacion}</span>
+        {esExtranjero ? (
+          <Tag severity="info" value="Pasaporte" style={{ fontSize: '0.75rem' }} />
+        ) : (
+          <Tag severity="secondary" value={rowData.identificacion.length === 13 ? "RUC" : "Cédula"} style={{ fontSize: '0.75rem' }} />
+        )}
+      </div>
+    );
+  };
+
   const header = (
     <div className="flex flex-wrap gap-3 align-items-center justify-content-between p-2">
       <h4 className="m-0">Administrar Clientes</h4>
       <IconField iconPosition="left">
         <InputIcon className="pi pi-search" />
-        <InputText type="search" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Buscar Cedula o Cliente..." className="w-full sm:w-auto" />
+        <InputText type="search" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Buscar Identificación o Cliente..." className="w-full sm:w-auto" />
       </IconField>
     </div>
   );
@@ -129,12 +146,12 @@ export function ClientesTable({ clientes }: { clientes: Cliente[] }) {
         rows={10}
         dataKey="id"
         filters={filters}
-        globalFilterFields={['nombre', 'rucCedula', 'correo']}
+        globalFilterFields={['nombre', 'identificacion', 'correo']}
         header={header}
         emptyMessage="No se encontraron clientes."
         className="p-datatable-sm"
       >
-        <Column field="rucCedula" header="RUC/Cédula" sortable />
+        <Column field="identificacion" header="Identificación" body={identificacionBodyTemplate} sortable />
         <Column field="nombre" header="Razón Social / Nombre" sortable />
         <Column field="correo" header="Correo" sortable />
         <Column
@@ -148,25 +165,50 @@ export function ClientesTable({ clientes }: { clientes: Cliente[] }) {
         <Column header="Opciones" body={actionBodyTemplate} exportable={false} style={{ minWidth: '14rem' }} />
       </DataTable>
 
-      <Dialog visible={dialogVisible} style={{ width: '450px' }} header="Detalle del Cliente" modal className="p-fluid" onHide={hideDialog}>
+      <Dialog visible={dialogVisible} style={{ width: '480px' }} header="Detalle del Cliente" modal className="p-fluid" onHide={hideDialog}>
+        <div className="field">
+          <label className="font-medium mb-2 block">Origen / Tipo de Identificación *</label>
+          <SelectButton
+            value={formData.tipoIdentificacion || "NACIONAL"}
+            options={[
+              { label: "Cédula / RUC (Ecuador)", value: "NACIONAL" },
+              { label: "Pasaporte (Extranjero)", value: "PASAPORTE" },
+            ]}
+            onChange={(e) => {
+              if (e.value) {
+                setFormData({ ...formData, tipoIdentificacion: e.value });
+              }
+            }}
+            className="w-full"
+          />
+        </div>
         <div className="field">
           <label htmlFor="nombre">Razón Social / Nombre *</label>
           <InputText
             id="nombre"
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+            placeholder={formData.tipoIdentificacion === "PASAPORTE" ? "Ej: John Doe o International Corp" : "Ej: Juan Pérez o Empresa S.A."}
             required
             autoFocus
           />
         </div>
         <div className="field">
-          <label htmlFor="rucCedula">RUC o Cédula *</label>
+          <label htmlFor="identificacion">
+            {formData.tipoIdentificacion === "PASAPORTE" ? "Número de Pasaporte *" : "RUC o Cédula *"}
+          </label>
           <InputText
-            id="rucCedula"
-            value={formData.rucCedula}
-            onChange={(e) => setFormData({ ...formData, rucCedula: e.target.value })}
+            id="identificacion"
+            value={formData.identificacion}
+            onChange={(e) => setFormData({ ...formData, identificacion: e.target.value })}
+            placeholder={formData.tipoIdentificacion === "PASAPORTE" ? "Ej: A12345678 (5 a 20 caracteres)" : "Ej: 1712345678 (Cédula) o 1712345678001 (RUC)"}
             required
           />
+          <small className="text-500">
+            {formData.tipoIdentificacion === "PASAPORTE"
+              ? "Para clientes fuera de Ecuador. Ingrese el pasaporte alfanumérico (5 a 20 caracteres)."
+              : "10 dígitos para Cédula o 13 dígitos para RUC ecuatoriano."}
+          </small>
         </div>
         <div className="field">
           <label htmlFor="direccion">Dirección</label>

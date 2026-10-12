@@ -59,7 +59,7 @@ model Empresa {
 model Cliente {
   id           String       @id @default(cuid())
   nombre       String
-  rucCedula    String       @unique
+  identificacion String     @unique
   direccion    String?
   telefono     String?
   correo       String?

@@ -54,9 +54,10 @@ export const empresaSchema = z.object({
 // ─── Cliente ──────────────────────────────────────────────
 export const clienteSchema = z.object({
   nombre: z.string().min(2, "Nombre requerido").max(200),
-  rucCedula: z
+  identificacion: z
     .string()
-    .regex(/^\d{10,13}$/, "RUC/Cédula debe tener 10 a 13 dígitos"),
+    .min(5, "Identificación debe tener al menos 5 caracteres")
+    .max(20, "Identificación no puede exceder 20 caracteres"),
   direccion: z.string().max(300).optional().nullable(),
   telefono: z.string().max(20).optional().nullable(),
   correo: z.string().email("Email inválido").optional().nullable(),

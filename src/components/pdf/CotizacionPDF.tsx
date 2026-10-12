@@ -1,6 +1,7 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { Cotizacion, ItemCotizacion, Cliente, Empresa } from '@prisma/client';
+import { esPasaporte } from '@/lib/validations/cliente';
 
 // Register a basic font (optional, react-pdf comes with basic fonts)
 // But to ensure consistent styling, standard is fine.
@@ -236,8 +237,8 @@ export const CotizacionPDF = ({ cotizacion, empresa }: CotizacionPDFProps) => {
               <Text style={styles.metaValue}>{c.cliente.nombre}</Text>
             </View>
             <View style={styles.metaTextRow}>
-              <Text style={styles.metaLabel}>RUC/C.I.:</Text>
-              <Text style={styles.metaValue}>{c.cliente.rucCedula}</Text>
+              <Text style={styles.metaLabel}>{esPasaporte(c.cliente.identificacion) ? 'Pasaporte:' : 'RUC/C.I.:'}</Text>
+              <Text style={styles.metaValue}>{c.cliente.identificacion}</Text>
             </View>
             {c.cliente.direccion && (
               <View style={styles.metaTextRow}>

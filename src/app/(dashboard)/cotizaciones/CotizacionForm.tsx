@@ -14,8 +14,9 @@ import { Toast } from "primereact/toast";
 import { saveCotizacion } from "./actions";
 import { CotizacionFormData, ItemCotizacionFormData } from "@/lib/validations/cotizacion";
 import { saveCliente } from "@/app/(dashboard)/clientes/actions";
+import { ClienteFormData, esPasaporte } from "@/lib/validations/cliente";
 
-type ClienteShort = { id: string; nombre: string; rucCedula: string; direccion: string | null; telefono: string | null; correo: string | null };
+type ClienteShort = { id: string; nombre: string; identificacion: string; direccion: string | null; telefono: string | null; correo: string | null };
 type ProductoShort = { id: string; sku: string; nombre: string; descripcion: string | null; precioUnitario: number; ivaAplicable: number };
 
 export function CotizacionForm({ 
@@ -44,9 +45,9 @@ export function CotizacionForm({
   const [observaciones, setObservaciones] = useState<string>(cotizacion?.observaciones || "");
 
   // Manejo inline de cliente
-  const emptyClient = { id: "", nombre: "", rucCedula: "", direccion: "", telefono: "", correo: "" };
-  const [clientData, setClientData] = useState(emptyClient);
-  const [originalClientData, setOriginalClientData] = useState(emptyClient);
+  const emptyClient: ClienteFormData = { id: "", tipoIdentificacion: "NACIONAL", nombre: "", identificacion: "", direccion: "", telefono: "", correo: "", activo: true };
+  const [clientData, setClientData] = useState<ClienteFormData>(emptyClient);
+  const [originalClientData, setOriginalClientData] = useState<ClienteFormData>(emptyClient);
   const [isNewClientMode, setIsNewClientMode] = useState(false);
   const [isSavingClient, setIsSavingClient] = useState(false);
 
@@ -55,13 +56,16 @@ export function CotizacionForm({
     if (clienteId) {
       const selected = clientes.find(c => c.id === clienteId);
       if (selected) {
-        const mapped = {
+        const esPasap = esPasaporte(selected.identificacion);
+        const mapped: ClienteFormData = {
           id: selected.id,
+          tipoIdentificacion: esPasap ? "PASAPORTE" : "NACIONAL",
           nombre: selected.nombre,
-          rucCedula: selected.rucCedula,
+          identificacion: selected.identificacion,
           direccion: selected.direccion || "",
           telefono: selected.telefono || "",
-          correo: selected.correo || ""
+          correo: selected.correo || "",
+          activo: true,
         };
         setClientData(mapped);
         setOriginalClientData(mapped);
@@ -88,12 +92,12 @@ export function CotizacionForm({
 
   const isClientChanged = () => {
     if (isNewClientMode) {
-      return clientData.nombre.trim() !== "" || clientData.rucCedula.trim() !== "";
+      return clientData.nombre.trim() !== "" || clientData.identificacion.trim() !== "";
     }
     if (!clienteId) return false;
     return (
       clientData.nombre !== originalClientData.nombre ||
-      clientData.rucCedula !== originalClientData.rucCedula ||
+      clientData.identificacion !== originalClientData.identificacion ||
       clientData.direccion !== originalClientData.direccion ||
       clientData.telefono !== originalClientData.telefono ||
       clientData.correo !== originalClientData.correo
@@ -101,8 +105,8 @@ export function CotizacionForm({
   };
 
   const handleSaveClientInline = async () => {
-    if (!clientData.nombre || !clientData.rucCedula) {
-      toast.current?.show({ severity: 'warn', summary: 'Atención', detail: 'Nombre y RUC/Cédula son requeridos' });
+    if (!clientData.nombre || !clientData.identificacion) {
+      toast.current?.show({ severity: 'warn', summary: 'Atención', detail: 'Nombre e Identificación son requeridos' });
       return;
     }
     setIsSavingClient(true);
@@ -366,12 +370,33 @@ export function CotizacionForm({
                 </h4>
                 <div className="grid formgrid p-fluid">
                   <div className="field col-12 md:col-6">
-                    <label className="text-sm">Razón Social / Nombre *</label>
-                    <InputText value={clientData.nombre} onChange={(e) => setClientData({...clientData, nombre: e.target.value})} />
+                    <label className="text-sm font-medium">Razón Social / Nombre *</label>
+                    <InputText 
+                      value={clientData.nombre} 
+                      onChange={(e) => setClientData({...clientData, nombre: e.target.value})} 
+                      placeholder={clientData.tipoIdentificacion === "PASAPORTE" ? "Ej: John Doe o Global Tech LLC" : "Ej: Juan Pérez o Empresa S.A."}
+                    />
                   </div>
                   <div className="field col-12 md:col-6">
-                    <label className="text-sm">RUC / Cédula *</label>
-                    <InputText value={clientData.rucCedula} onChange={(e) => setClientData({...clientData, rucCedula: e.target.value})} />
+                    <div className="flex justify-content-between align-items-center mb-1">
+                      <label className="text-sm font-medium">
+                        {clientData.tipoIdentificacion === "PASAPORTE" ? "Pasaporte (Extranjero) *" : "RUC / Cédula *"}
+                      </label>
+                      <span 
+                        className="text-xs text-primary cursor-pointer hover:underline font-semibold"
+                        onClick={() => setClientData({
+                          ...clientData, 
+                          tipoIdentificacion: clientData.tipoIdentificacion === "PASAPORTE" ? "NACIONAL" : "PASAPORTE"
+                        })}
+                      >
+                        {clientData.tipoIdentificacion === "PASAPORTE" ? "Cambiar a Cédula/RUC" : "¿Extranjero? Usar Pasaporte"}
+                      </span>
+                    </div>
+                    <InputText 
+                      value={clientData.identificacion} 
+                      onChange={(e) => setClientData({...clientData, identificacion: e.target.value})} 
+                      placeholder={clientData.tipoIdentificacion === "PASAPORTE" ? "Ej: A12345678 (5 a 20 caracteres)" : "Ej: 1712345678 o 1712345678001"}
+                    />
                   </div>
                   <div className="field col-12 md:col-4">
                     <label className="text-sm">Correo</label>

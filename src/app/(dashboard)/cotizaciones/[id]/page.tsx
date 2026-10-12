@@ -30,7 +30,7 @@ export default async function EditarCotizacionPage({ params }: { params: Promise
   // Cargar catálogos para los Dropdowns
   const clientes = await db.cliente.findMany({
     where: { activo: true },
-    select: { id: true, nombre: true, rucCedula: true, direccion: true, telefono: true, correo: true },
+    select: { id: true, nombre: true, identificacion: true, direccion: true, telefono: true, correo: true },
     orderBy: { nombre: "asc" }
   });
 
@@ -38,7 +38,7 @@ export default async function EditarCotizacionPage({ params }: { params: Promise
   if (!clientes.find(c => c.id === cotizacionDB.clienteId)) {
     const missingClient = await db.cliente.findUnique({ 
       where: { id: cotizacionDB.clienteId },
-      select: { id: true, nombre: true, rucCedula: true, direccion: true, telefono: true, correo: true }
+      select: { id: true, nombre: true, identificacion: true, direccion: true, telefono: true, correo: true }
     });
     if (missingClient) clientes.push(missingClient);
   }

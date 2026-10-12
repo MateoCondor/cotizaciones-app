@@ -24,8 +24,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Permite HMR desde otros dispositivos en la red local (ej: celular)
-  allowedDevOrigins: ["192.168.100.101"],
   async headers() {
     return [
       {

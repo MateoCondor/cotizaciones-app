@@ -14,7 +14,7 @@ export default async function NuevaCotizacionPage() {
   // Cargar catálogos para los Dropdowns
   const clientes = await db.cliente.findMany({
     where: { activo: true },
-    select: { id: true, nombre: true, rucCedula: true, direccion: true, telefono: true, correo: true },
+    select: { id: true, nombre: true, identificacion: true, direccion: true, telefono: true, correo: true },
     orderBy: { nombre: "asc" }
   });
 

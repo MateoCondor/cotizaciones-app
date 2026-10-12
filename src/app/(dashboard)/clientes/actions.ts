@@ -14,6 +14,8 @@ export async function saveCliente(data: ClienteFormData) {
     return { error: validated.error.issues.map((e) => e.message).join(", "), success: false };
   }
 
+  const identificacionNormalized = validated.data.identificacion.trim().toUpperCase();
+
   try {
     if (data.id) {
       // Actualizar
@@ -21,7 +23,7 @@ export async function saveCliente(data: ClienteFormData) {
         where: { id: data.id },
         data: {
           nombre: validated.data.nombre,
-          rucCedula: validated.data.rucCedula,
+          identificacion: identificacionNormalized,
           direccion: validated.data.direccion,
           telefono: validated.data.telefono,
           correo: validated.data.correo,
@@ -35,7 +37,7 @@ export async function saveCliente(data: ClienteFormData) {
       const created = await db.cliente.create({
         data: {
           nombre: validated.data.nombre,
-          rucCedula: validated.data.rucCedula,
+          identificacion: identificacionNormalized,
           direccion: validated.data.direccion,
           telefono: validated.data.telefono,
           correo: validated.data.correo,
@@ -47,7 +49,7 @@ export async function saveCliente(data: ClienteFormData) {
     }
   } catch (error: any) {
     if (error.code === 'P2002') {
-      return { error: "El RUC o Cédula ya está registrado en otro cliente", success: false };
+      return { error: "El RUC, Cédula o Pasaporte ya está registrado en otro cliente", success: false };
     }
     return { error: "Error interno del servidor", success: false };
   }
