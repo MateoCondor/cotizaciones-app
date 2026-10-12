@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/prisma";
 import { productoSchema, ProductoFormData } from "@/lib/validations/producto";
 import { revalidatePath } from "next/cache";
+import { roundMoney } from "@/lib/calculations";
 
 export async function saveProducto(data: ProductoFormData) {
   const session = await auth();
@@ -24,6 +25,8 @@ export async function saveProducto(data: ProductoFormData) {
       finalSku = `PROD-${String(count + 1).padStart(4, '0')}-${randomSuffix}`;
     }
 
+    const precioUnitario = roundMoney(validated.data.precioUnitario);
+
     if (data.id) {
       // Actualizar
       await db.producto.update({
@@ -32,7 +35,7 @@ export async function saveProducto(data: ProductoFormData) {
           sku: finalSku,
           nombre: validated.data.nombre,
           descripcion: validated.data.descripcion,
-          precioUnitario: validated.data.precioUnitario,
+          precioUnitario,
           ivaAplicable: validated.data.ivaAplicable,
           activo: validated.data.activo,
         },
@@ -44,7 +47,7 @@ export async function saveProducto(data: ProductoFormData) {
           sku: finalSku,
           nombre: validated.data.nombre,
           descripcion: validated.data.descripcion,
-          precioUnitario: validated.data.precioUnitario,
+          precioUnitario,
           ivaAplicable: validated.data.ivaAplicable,
           activo: true, // por defecto al crear
         },

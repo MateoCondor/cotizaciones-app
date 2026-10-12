@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { ProductosTable } from "./ProductosTable";
+import { calcularProductoPrecios } from "@/lib/calculations";
 
 export default async function ProductosPage() {
   const session = await auth();
@@ -15,11 +16,15 @@ export default async function ProductosPage() {
   });
 
   // Convertir Decimal a numbers para que sean serializables de Server a Client Component
-  const productos = productosDB.map(p => ({
-    ...p,
-    precioUnitario: Number(p.precioUnitario),
-    ivaAplicable: Number(p.ivaAplicable)
-  }));
+  const productos = productosDB.map(p => {
+    const { precioBase, tarifaIva, precioConIva } = calcularProductoPrecios(p.precioUnitario, p.ivaAplicable);
+    return {
+      ...p,
+      precioUnitario: precioBase,
+      ivaAplicable: tarifaIva,
+      precioConIva,
+    };
+  });
 
   return (
     <div>

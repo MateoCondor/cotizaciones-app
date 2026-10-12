@@ -15,6 +15,7 @@ import { saveCotizacion } from "./actions";
 import { CotizacionFormData, ItemCotizacionFormData } from "@/lib/validations/cotizacion";
 import { saveCliente } from "@/app/(dashboard)/clientes/actions";
 import { ClienteFormData, esPasaporte } from "@/lib/validations/cliente";
+import { calcularItemValores, calcularTotalesCotizacion } from "@/lib/calculations";
 
 type ClienteShort = { id: string; nombre: string; identificacion: string; direccion: string | null; telefono: string | null; correo: string | null };
 type ProductoShort = { id: string; sku: string; nombre: string; descripcion: string | null; precioUnitario: number; ivaAplicable: number };
@@ -187,16 +188,13 @@ export function CotizacionForm({
   };
 
   const { subtotalGlobal, descuentoGlobal, ivaGlobal, totalGlobal } = useMemo(() => {
-    let subtotal = 0; let descuentoTotal = 0; let ivaTotal = 0;
-    items.forEach(item => {
-      const itemBruto = (item.cantidad || 0) * (item.precioUnitario || 0);
-      const descValor = item.tipoDescuento === "PORCENTAJE" ? itemBruto * ((item.descuento || 0) / 100) : (item.descuento || 0);
-      const itemNeto = itemBruto - descValor;
-      const itemIva = itemNeto * ((item.iva || 0) / 100);
-
-      subtotal += itemBruto; descuentoTotal += descValor; ivaTotal += itemIva;
-    });
-    return { subtotalGlobal: subtotal, descuentoGlobal: descuentoTotal, ivaGlobal: ivaTotal, totalGlobal: subtotal - descuentoTotal + ivaTotal };
+    const totales = calcularTotalesCotizacion(items);
+    return {
+      subtotalGlobal: totales.subtotal,
+      descuentoGlobal: totales.descuentoTotal,
+      ivaGlobal: totales.ivaTotal,
+      totalGlobal: totales.total,
+    };
   }, [items]);
 
   const handleSubmit = async () => {
@@ -310,13 +308,28 @@ export function CotizacionForm({
       </span>
     </div>
   );
+  const descuentoValorBodyTemplate = (rowData: any) => {
+    const { descValor } = calcularItemValores(rowData);
+    return (
+      <span className={`font-semibold ${descValor > 0 ? "text-red-500" : "text-500"}`}>
+        {descValor > 0 ? `-${new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(descValor)}` : '$0.00'}
+      </span>
+    );
+  };
   const ivaBodyTemplate = (rowData: any, options: any) => (
-    <Dropdown value={rowData.iva} options={[{ label: "15%", value: 15 }, { label: "5%", value: 5 }, { label: "0%", value: 0 }]} onChange={(e) => updateItem(options.rowIndex, "iva", e.value)} className="w-full max-w-7rem" />
+    <Dropdown value={rowData.iva} options={[{ label: "15%", value: 15 }, { label: "0%", value: 0 }]} onChange={(e) => updateItem(options.rowIndex, "iva", e.value)} className="w-full max-w-7rem" />
   );
+  const ivaValorBodyTemplate = (rowData: any) => {
+    const { ivaValor } = calcularItemValores(rowData);
+    return (
+      <span className={`font-semibold ${ivaValor > 0 ? "text-primary" : "text-500"}`}>
+        {new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(ivaValor)}
+      </span>
+    );
+  };
   const itemSubtotalTemplate = (rowData: any) => {
-    const bruto = (rowData.cantidad || 0) * (rowData.precioUnitario || 0);
-    const desc = rowData.tipoDescuento === "PORCENTAJE" ? bruto * ((rowData.descuento || 0) / 100) : (rowData.descuento || 0);
-    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(bruto - desc);
+    const { totalConIva } = calcularItemValores(rowData);
+    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(totalConIva);
   };
   const deleteBodyTemplate = (_: any, options: any) => (
     <Button icon="pi pi-trash" outlined  severity="danger" onClick={() => removeItem(options.rowIndex)} style={{ gap: '0.5rem' }}>Quitar</Button>
@@ -437,14 +450,16 @@ export function CotizacionForm({
             <Button label="Añadir Fila" icon="pi pi-plus" size="small" onClick={addItem} outlined />
           </div>
 
-          <DataTable value={items} emptyMessage="No hay productos agregados. Haz clic en 'Añadir Fila'." className="p-datatable-sm" scrollable tableStyle={{ minWidth: '75rem' }}>
-            <Column header="Catálogo" body={productBodyTemplate} style={{ width: '20%', minWidth: '160px' }} />
-            <Column header="Descripción" body={nombreBodyTemplate} style={{ width: '25%', minWidth: '180px' }} />
-            <Column header="Cant." body={cantidadBodyTemplate} style={{ width: '10%', minWidth: '80px' }} />
-            <Column header="Precio U." body={precioBodyTemplate} style={{ width: '12%', minWidth: '125px' }} />
-            <Column header="Dscto." body={descuentoBodyTemplate} style={{ width: '12%', minWidth: '120px' }} />
-            <Column header="IVA" body={ivaBodyTemplate} style={{ width: '8%', minWidth: '80px' }} />
-            <Column header="Subtotal" body={itemSubtotalTemplate} style={{ width: '8%', minWidth: '100px' }} align="center"/>
+          <DataTable value={items} emptyMessage="No hay productos agregados. Haz clic en 'Añadir Fila'." className="p-datatable-sm" scrollable tableStyle={{ minWidth: '82rem' }}>
+            <Column header="Catálogo" body={productBodyTemplate} style={{ width: '16%', minWidth: '140px' }} />
+            <Column header="Descripción" body={nombreBodyTemplate} style={{ width: '20%', minWidth: '160px' }} />
+            <Column header="Cant." body={cantidadBodyTemplate} style={{ width: '7%', minWidth: '70px' }} />
+            <Column header="Precio U." body={precioBodyTemplate} style={{ width: '11%', minWidth: '115px' }} />
+            <Column header="Tarifa Dscto." body={descuentoBodyTemplate} style={{ width: '11%', minWidth: '115px' }} />
+            <Column header="Valor Dscto." body={descuentoValorBodyTemplate} style={{ width: '8%', minWidth: '85px' }} align="center" />
+            <Column header="Tarifa IVA" body={ivaBodyTemplate} style={{ width: '9%', minWidth: '85px' }} />
+            <Column header="IVA" body={ivaValorBodyTemplate} style={{ width: '8%', minWidth: '85px' }} align="center" />
+            <Column header="Subtotal" body={itemSubtotalTemplate} style={{ width: '8%', minWidth: '90px' }} align="center"/>
             <Column header="Eliminar" body={deleteBodyTemplate} style={{ width: '3%', minWidth: '50px' }} align="center" />
           </DataTable>
         </div>

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/prisma";
 import { cotizacionSchema, CotizacionFormData } from "@/lib/validations/cotizacion";
 import { revalidatePath } from "next/cache";
+import { calcularItemValores, roundMoney } from "@/lib/calculations";
 
 // Función para calcular totales de forma segura en el backend
 const calcularTotales = (items: CotizacionFormData["items"]) => {
@@ -13,30 +14,16 @@ const calcularTotales = (items: CotizacionFormData["items"]) => {
   let total = 0;
 
   const itemsCalculados = items.map((item, index) => {
-    const itemSubtotalBruto = item.cantidad * item.precioUnitario;
-    
-    // Calcular descuento por item
-    let itemDescuentoValor = 0;
-    if (item.tipoDescuento === "PORCENTAJE") {
-      itemDescuentoValor = itemSubtotalBruto * (item.descuento / 100);
-    } else {
-      itemDescuentoValor = item.descuento;
-    }
-    
-    const itemSubtotalNeto = itemSubtotalBruto - itemDescuentoValor;
-    
-    // Calcular IVA
-    const itemIvaValor = itemSubtotalNeto * (item.iva / 100);
+    const { bruto, descValor, ivaValor, totalConIva } = calcularItemValores(item);
 
-    // Sumar a globales
-    subtotal += itemSubtotalBruto;
-    descuentoTotal += itemDescuentoValor;
-    ivaTotal += itemIvaValor;
-    total += (itemSubtotalNeto + itemIvaValor);
+    subtotal = roundMoney(subtotal + bruto);
+    descuentoTotal = roundMoney(descuentoTotal + descValor);
+    ivaTotal = roundMoney(ivaTotal + ivaValor);
+    total = roundMoney(total + totalConIva);
 
     return {
       ...item,
-      subtotalNetoCalculado: itemSubtotalNeto,
+      subtotalNetoCalculado: totalConIva,
       orden: index
     };
   });

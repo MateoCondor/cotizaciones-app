@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
@@ -17,6 +17,7 @@ import { FilterMatchMode } from "primereact/api";
 // and we mapped them to numbers in page.tsx
 import { saveProducto, toggleProductoStatus } from "./actions";
 import { ProductoFormData } from "@/lib/validations/producto";
+import { calcularProductoPrecios } from "@/lib/calculations";
 
 type ProductoMapeado = {
   id: string;
@@ -25,11 +26,27 @@ type ProductoMapeado = {
   descripcion: string | null;
   precioUnitario: number;
   ivaAplicable: number;
+  precioConIva?: number;
   activo: boolean;
 };
 
 export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) {
-  const [productosList, setProductosList] = useState<ProductoMapeado[]>(productos);
+  const [productosList, setProductosList] = useState<ProductoMapeado[]>(() =>
+    productos.map(p => ({
+      ...p,
+      precioConIva: p.precioConIva ?? calcularProductoPrecios(p.precioUnitario, p.ivaAplicable).precioConIva,
+    }))
+  );
+
+  useEffect(() => {
+    setProductosList(
+      productos.map(p => ({
+        ...p,
+        precioConIva: p.precioConIva ?? calcularProductoPrecios(p.precioUnitario, p.ivaAplicable).precioConIva,
+      }))
+    );
+  }, [productos]);
+
   const [dialogVisible, setDialogVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<ProductoFormData>({ 
@@ -44,7 +61,6 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
 
   const ivaOptions = [
     { label: "15% (General)", value: 15 },
-    { label: "5% (Reducido)", value: 5 },
     { label: "0% (Sin IVA)", value: 0 },
   ];
 
@@ -120,8 +136,46 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
     );
   };
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(val);
+  };
+
   const precioBodyTemplate = (rowData: ProductoMapeado) => {
-    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(rowData.precioUnitario);
+    return (
+      <span className="font-medium text-800">
+        {formatCurrency(rowData.precioUnitario)}
+      </span>
+    );
+  };
+
+  const precioConIvaBodyTemplate = (rowData: ProductoMapeado) => {
+    const tieneIva = (rowData.ivaAplicable || 0) > 0;
+    const { montoIva, precioConIva } = calcularProductoPrecios(rowData.precioUnitario, rowData.ivaAplicable);
+    const finalPrice = rowData.precioConIva ?? precioConIva;
+
+    if (tieneIva) {
+      return (
+        <div className="flex flex-column">
+          <span className="font-bold text-primary">
+            {formatCurrency(finalPrice)}
+          </span>
+          <span className="text-xs text-500 font-medium">
+            +{formatCurrency(montoIva)} IVA
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-column">
+        <span className="text-700 font-medium">
+          {formatCurrency(rowData.precioUnitario)}
+        </span>
+        <span className="text-xs text-400">
+          Sin IVA (0%)
+        </span>
+      </div>
+    );
   };
 
   const header = (
@@ -132,6 +186,11 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
         <InputText type="search" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Buscar Codigo o Producto..." className="w-full sm:w-auto" />
       </IconField>
     </div>
+  );
+
+  const { precioBase, tarifaIva, montoIva, precioConIva: precioFinalConIva } = calcularProductoPrecios(
+    formData.precioUnitario,
+    formData.ivaAplicable
   );
 
   return (
@@ -154,7 +213,7 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
       >
         <Column field="sku" header="Código/SKU" sortable />
         <Column field="nombre" header="Nombre del Producto" sortable />
-        <Column field="precioUnitario" header="Precio Unit." body={precioBodyTemplate} sortable />
+        <Column field="precioUnitario" header="Precio Unit. (Sin IVA)" body={precioBodyTemplate} sortable />
         <Column 
           field="ivaAplicable" 
           header="Tarifa IVA" 
@@ -162,6 +221,12 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
           body={(rowData) => (
             <Tag severity={rowData.ivaAplicable > 0 ? "info" : "warning"} value={`${rowData.ivaAplicable}%`} />
           )} 
+        />
+        <Column 
+          field="precioConIva" 
+          header="Precio con IVA" 
+          sortable 
+          body={precioConIvaBodyTemplate} 
         />
         <Column 
           field="activo" 
@@ -174,7 +239,15 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
         <Column header="Opciones" body={actionBodyTemplate} exportable={false} style={{ minWidth: '14rem' }} />
       </DataTable>
 
-      <Dialog visible={dialogVisible} style={{ width: '450px' }} header="Detalle del Producto" modal className="p-fluid" onHide={hideDialog}>
+      <Dialog 
+        visible={dialogVisible} 
+        style={{ width: '480px' }} 
+        breakpoints={{ '960px': '75vw', '641px': '90vw' }}
+        header={formData.id ? "Editar Producto" : "Nuevo Producto"} 
+        modal 
+        className="p-fluid" 
+        onHide={hideDialog}
+      >
         <div className="field">
           <label htmlFor="sku">Código/SKU</label>
           <InputText 
@@ -226,7 +299,7 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
             />
           </div>
         </div>
-        <div className="field mt-4">
+        <div className="field mt-3">
           <label htmlFor="ivaAplicable">Tarifa IVA Aplicable *</label>
           <Dropdown 
             id="ivaAplicable" 
@@ -237,6 +310,48 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
             className="w-full"
           />
         </div>
+
+        {/* Previsualización del Precio con IVA */}
+        {tarifaIva > 0 ? (
+          <div className="surface-50 border-round border-1 surface-border p-3 mt-3">
+            <div className="flex align-items-center justify-content-between mb-2">
+              <span className="text-xs font-bold text-600 uppercase tracking-wide flex align-items-center gap-1">
+                Previsualización con IVA
+              </span>
+              
+            </div>
+            
+            <div className="flex flex-column gap-1 text-sm text-600 mb-2">
+              <div className="flex justify-content-between">
+                <span>Precio Unitario (Sin IVA):</span>
+                <span className="font-medium text-800">{formatCurrency(precioBase)}</span>
+              </div>
+              <div className="flex justify-content-between">
+                <span>Valor del IVA ({tarifaIva}%):</span>
+                <span className="font-medium text-800">+{formatCurrency(montoIva)}</span>
+              </div>
+            </div>
+
+            <div className="border-top-1 surface-border pt-2 flex justify-content-between align-items-center">
+              <span className="font-bold text-900 text-sm">Precio Final con IVA:</span>
+              <span className="text-2xl font-bold text-primary">
+                {formatCurrency(precioFinalConIva)}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="surface-50 border-round border-1 surface-border p-3 mt-3 flex align-items-center justify-content-between">
+            <div className="flex align-items-center gap-2">
+              <i className="pi pi-info-circle text-500"></i>
+              <div>
+                <div className="text-xs font-semibold text-500 uppercase">Tarifa 0% (Sin IVA)</div>
+                <div className="text-sm text-700">Este producto no grava IVA.</div>
+              </div>
+            </div>
+            <span className="text-xl font-bold text-700">{formatCurrency(precioBase)}</span>
+          </div>
+        )}
+
         <div className="flex justify-content-end gap-2 mt-4">
           <Button label="Cancelar" icon="pi pi-times" outlined onClick={hideDialog} />
           <Button label="Guardar" icon="pi pi-check" onClick={handleSave} loading={isSaving} />

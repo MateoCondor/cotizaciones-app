@@ -2,6 +2,7 @@ import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { Cotizacion, ItemCotizacion, Cliente, Empresa } from '@prisma/client';
 import { esPasaporte } from '@/lib/validations/cliente';
+import { calcularItemValores } from '@/lib/calculations';
 
 // Register a basic font (optional, react-pdf comes with basic fonts)
 // But to ensure consistent styling, standard is fine.
@@ -98,11 +99,12 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   colCode: { width: '10%' },
-  colDesc: { width: '35%' },
-  colQty: { width: '10%', textAlign: 'center' },
-  colPrice: { width: '15%', textAlign: 'left' },
-  colDisc: { width: '15%', textAlign: 'center' },
-  colTotal: { width: '15%', textAlign: 'right' },
+  colDesc: { width: '32%' },
+  colQty: { width: '8%', textAlign: 'center' },
+  colPrice: { width: '13%', textAlign: 'left' },
+  colDisc: { width: '11%', textAlign: 'center' },
+  colIva: { width: '12%', textAlign: 'right' },
+  colTotal: { width: '14%', textAlign: 'right' },
   totalsSection: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -191,13 +193,12 @@ const formatDate = (date: Date) => {
 const formatDescuento = (item: any) => {
   const pct = Number(item.descuento);
   if (pct === 0) return '-';
+  const { descValor } = calcularItemValores(item);
   if (item.tipoDescuento === 'PORCENTAJE') {
-    const base = Number(item.precioUnitario) * Number(item.cantidad);
-    const montoDesc = base * (pct / 100);
-    return `${formatCurrency(montoDesc)} (${pct}%)`;
+    return `${formatCurrency(descValor)} (${pct}%)`;
   }
   // VALOR fijo
-  return formatCurrency(item.descuento);
+  return formatCurrency(descValor);
 };
 
 export const CotizacionPDF = ({ cotizacion, empresa }: CotizacionPDFProps) => {
@@ -272,19 +273,24 @@ export const CotizacionPDF = ({ cotizacion, empresa }: CotizacionPDFProps) => {
             <Text style={styles.colQty}>Cant.</Text>
             <Text style={styles.colPrice}>V. Unit</Text>
             <Text style={styles.colDisc}>Dscto.</Text>
+            <Text style={styles.colIva}>IVA</Text>
             <Text style={styles.colTotal}>V. Total</Text>
           </View>
           {/* Table Rows */}
-          {c.items.map((item, idx) => (
-            <View key={idx} style={styles.tableRow}>
-              <Text style={styles.colCode}>{item.productoId ? 'CAT' : 'MANUAL'}</Text>
-              <Text style={styles.colDesc}>{item.nombre}</Text>
-              <Text style={styles.colQty}>{Number(item.cantidad)}</Text>
-              <Text style={styles.colPrice}>{formatCurrency(item.precioUnitario)}</Text>
-              <Text style={styles.colDisc}>{formatDescuento(item)}</Text>
-              <Text style={styles.colTotal}>{formatCurrency(item.subtotal)}</Text>
-            </View>
-          ))}
+          {c.items.map((item, idx) => {
+            const { ivaValor, totalConIva } = calcularItemValores(item);
+            return (
+              <View key={idx} style={styles.tableRow}>
+                <Text style={styles.colCode}>{item.productoId ? 'CAT' : 'MANUAL'}</Text>
+                <Text style={styles.colDesc}>{item.nombre}</Text>
+                <Text style={styles.colQty}>{Number(item.cantidad) || 0}</Text>
+                <Text style={styles.colPrice}>{formatCurrency(item.precioUnitario)}</Text>
+                <Text style={styles.colDisc}>{formatDescuento(item)}</Text>
+                <Text style={styles.colIva}>{formatCurrency(ivaValor)}</Text>
+                <Text style={styles.colTotal}>{formatCurrency(totalConIva)}</Text>
+              </View>
+            );
+          })}
         </View>
 
         {/* Totals Box */}
