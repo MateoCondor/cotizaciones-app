@@ -37,6 +37,12 @@ const nextConfig: NextConfig = {
   },
   // Requerido para @react-pdf/renderer en el servidor
   serverExternalPackages: ["@react-pdf/renderer"],
+  // Aumentar límite para Server Actions (necesario para subir logos en base64)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '4mb',
+    },
+  },
 };
 
 export default nextConfig;

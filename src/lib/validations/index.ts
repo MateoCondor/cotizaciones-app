@@ -38,7 +38,10 @@ export const empresaSchema = z.object({
   ruc: z
     .string()
     .regex(/^\d{10,13}$/, "RUC debe tener 10 a 13 dígitos"),
-  logoUrl: z.string().url().optional().nullable(),
+  logoUrl: z.string().refine(
+    (val) => !val || val.startsWith('data:') || val.startsWith('http://') || val.startsWith('https://'),
+    { message: "URL de logo inválida" }
+  ).optional().nullable(),
   logoNombre: z.string().optional().nullable(),
   direccion: z.string().max(300).optional().nullable(),
   telefono: z.string().max(20).optional().nullable(),

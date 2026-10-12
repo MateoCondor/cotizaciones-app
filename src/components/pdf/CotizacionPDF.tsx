@@ -15,7 +15,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 5,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     paddingBottom: 10,
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 10,
+    marginBottom: 15,
     color: '#333',
   },
   metaSection: {

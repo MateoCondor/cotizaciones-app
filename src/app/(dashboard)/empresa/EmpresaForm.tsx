@@ -5,7 +5,6 @@ import { saveEmpresa } from "./actions";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
-import { FileUpload } from "primereact/fileupload";
 import { Empresa } from "@prisma/client";
 
 export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
@@ -13,6 +12,7 @@ export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
   const toast = useRef<Toast>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(empresa?.logoUrl || null);
   const [removeLogo, setRemoveLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state?.success) {
@@ -22,8 +22,8 @@ export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
     }
   }, [state]);
 
-  const onLogoSelect = (e: any) => {
-    const file = e.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       const objectUrl = URL.createObjectURL(file);
       setLogoPreview(objectUrl);
@@ -31,9 +31,11 @@ export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
     }
   };
 
-  const onLogoClear = () => {
-    setLogoPreview(empresa?.logoUrl || null);
-    setRemoveLogo(false);
+  const handleRemoveLogo = () => {
+    setLogoPreview(null);
+    setRemoveLogo(true);
+    // Limpiar el input nativo para que no envíe el archivo anterior
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
@@ -41,7 +43,7 @@ export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
       <Toast ref={toast} />
       <form action={formAction} className="grid formgrid p-fluid">
         {/* Hidden inputs para estado de logo */}
-        <input type="hidden" name="existingLogoUrl" value={empresa?.logoUrl || ""} />
+        <input type="hidden" name="existingLogoUrl" value={removeLogo ? "" : (empresa?.logoUrl || "")} />
         <input type="hidden" name="removeLogo" value={removeLogo.toString()} />
 
         <div className="col-12 lg:col-8">
@@ -94,55 +96,63 @@ export function EmpresaForm({ empresa }: { empresa: Empresa | null }) {
           <div className="surface-card shadow-1 p-4 border-round mb-4">
             <h5 className="text-xl font-bold mb-4 border-bottom-1 surface-border pb-3">Logo de la Empresa</h5>
             
-            <div className="flex flex-column align-items-center justify-content-center mb-4">
+            {/* Preview */}
+            <div className="flex flex-column align-items-center justify-content-center mb-3">
               {logoPreview && !removeLogo ? (
                 <div className="relative border-1 surface-border border-round p-2 w-full flex justify-content-center bg-white" style={{ height: '200px' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={logoPreview} alt="Logo Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  <Button 
-                    type="button" 
-                    icon="pi pi-times" 
-                    rounded 
-                    severity="danger" 
-                    className="absolute" 
-                    style={{ top: '-10px', right: '-10px' }} 
-                    onClick={() => {
-                      setLogoPreview(null);
-                      setRemoveLogo(true);
-                    }}
+                  <Button
+                    type="button"
+                    icon="pi pi-times"
+                    rounded
+                    severity="danger"
+                    className="absolute"
+                    style={{ top: '-10px', right: '-10px' }}
+                    onClick={handleRemoveLogo}
                   />
                 </div>
               ) : (
-                <div className="border-2 border-dashed surface-border border-round p-4 w-full flex flex-column align-items-center justify-content-center text-500" style={{ height: '200px' }}>
+                <div
+                  className="border-2 border-dashed surface-border border-round p-4 w-full flex flex-column align-items-center justify-content-center text-500 cursor-pointer"
+                  style={{ height: '200px' }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <i className="pi pi-image text-4xl mb-2"></i>
                   <span>Sin logo seleccionado</span>
                 </div>
               )}
             </div>
 
-            <FileUpload 
-              name="logo" 
-              accept="image/*" 
-              maxFileSize={2000000} 
-              mode="basic"
-              chooseLabel="Seleccionar Logo"
-              className="w-full"
-              onSelect={onLogoSelect}
-              onClear={onLogoClear}
-              customUpload
-              auto={false}
+            {/* Input nativo — este SÍ envía el archivo en el FormData */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              name="logo"
+              accept="image/png, image/jpeg, image/jpg, image/svg+xml, image/webp"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
             />
-            <small className="block text-500 mt-2 text-center">Formatos soportados: JPG, PNG, SVG. Máx 2MB.</small>
+
+            <Button
+              type="button"
+              label="Seleccionar Logo"
+              icon="pi pi-upload"
+              outlined
+              className="w-full"
+              onClick={() => fileInputRef.current?.click()}
+            />
+            <small className="block text-500 mt-2 text-center">Formatos: JPG, PNG, SVG, WEBP. Máx 2MB.</small>
           </div>
 
           <div className="surface-card shadow-1 p-4 border-round">
-            <Button 
-              type="submit" 
-              label="Guardar Configuración" 
-              icon="pi pi-save" 
+            <Button
+              type="submit"
+              label="Guardar Configuración"
+              icon="pi pi-save"
               size="large"
-              loading={isPending} 
-              className="w-full" 
+              loading={isPending}
+              className="w-full"
             />
           </div>
         </div>
