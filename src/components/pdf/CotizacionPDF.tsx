@@ -96,11 +96,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
     padding: 6,
   },
-  colCode: { width: '15%' },
+  colCode: { width: '10%' },
   colDesc: { width: '35%' },
   colQty: { width: '10%', textAlign: 'center' },
-  colPrice: { width: '15%', textAlign: 'right' },
-  colDisc: { width: '10%', textAlign: 'right' },
+  colPrice: { width: '15%', textAlign: 'left' },
+  colDisc: { width: '15%', textAlign: 'center' },
   colTotal: { width: '15%', textAlign: 'right' },
   totalsSection: {
     flexDirection: 'row',
@@ -185,6 +185,20 @@ const formatDate = (date: Date) => {
   return new Date(date).toLocaleDateString('es-EC');
 };
 
+// Si el descuento es por porcentaje, muestra el monto en $ y entre paréntesis el %.
+// Si es valor fijo, muestra solo el monto en $.
+const formatDescuento = (item: any) => {
+  const pct = Number(item.descuento);
+  if (pct === 0) return '-';
+  if (item.tipoDescuento === 'PORCENTAJE') {
+    const base = Number(item.precioUnitario) * Number(item.cantidad);
+    const montoDesc = base * (pct / 100);
+    return `${formatCurrency(montoDesc)} (${pct}%)`;
+  }
+  // VALOR fijo
+  return formatCurrency(item.descuento);
+};
+
 export const CotizacionPDF = ({ cotizacion, empresa }: CotizacionPDFProps) => {
   const c = cotizacion;
   const e = empresa;
@@ -266,7 +280,7 @@ export const CotizacionPDF = ({ cotizacion, empresa }: CotizacionPDFProps) => {
               <Text style={styles.colDesc}>{item.nombre}</Text>
               <Text style={styles.colQty}>{Number(item.cantidad)}</Text>
               <Text style={styles.colPrice}>{formatCurrency(item.precioUnitario)}</Text>
-              <Text style={styles.colDisc}>{formatCurrency(item.descuento)}</Text>
+              <Text style={styles.colDisc}>{formatDescuento(item)}</Text>
               <Text style={styles.colTotal}>{formatCurrency(item.subtotal)}</Text>
             </View>
           ))}
