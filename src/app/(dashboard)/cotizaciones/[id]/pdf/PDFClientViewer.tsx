@@ -22,6 +22,12 @@ const MobilePDFOpener = dynamic(
   { ssr: false }
 );
 
+// Componente reusable para compartir PDF
+const PDFShareButton = dynamic(
+  () => import("./PDFShareButton"),
+  { ssr: false }
+);
+
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -62,28 +68,9 @@ export default function PDFClientViewer({ cotizacion, empresa }: { cotizacion: a
           />
         </div>
 
-        {/* En móvil: solo botón Descargar en el header */}
-        {isMobile && (
-          <PDFDownloadLink
-            document={<CotizacionPDF cotizacion={cotizacion} empresa={empresa} />}
-            fileName={`Cotizacion_${cotizacion.numero}.pdf`}
-            style={{ textDecoration: 'none' }}
-          >
-            {({ loading }) => (
-              <Button
-                label={loading ? 'Generando...' : 'Descargar PDF'}
-                icon={loading ? "pi pi-spin pi-spinner" : "pi pi-download"}
-                severity="danger"
-                disabled={loading}
-                className="w-full"
-              />
-            )}
-          </PDFDownloadLink>
-        )}
-
-        {/* En desktop: botón Descargar centrado */}
+        {/* En desktop: botón Descargar y botón Compartir centrados */}
         {!isMobile && (
-          <div className="flex-grow-1 flex justify-content-center">
+          <div className="flex-grow-1 flex justify-content-center gap-2">
             <PDFDownloadLink
               document={<CotizacionPDF cotizacion={cotizacion} empresa={empresa} />}
               fileName={`Cotizacion_${cotizacion.numero}.pdf`}
@@ -95,10 +82,18 @@ export default function PDFClientViewer({ cotizacion, empresa }: { cotizacion: a
                   icon={loading ? "pi pi-spin pi-spinner" : "pi pi-download"}
                   severity="danger"
                   disabled={loading}
-                  className="w-15rem"
+                  className="w-14rem"
                 />
               )}
             </PDFDownloadLink>
+            <div style={{ width: '14rem' }}>
+              <PDFShareButton
+                cotizacion={cotizacion}
+                empresa={empresa}
+                label="Compartir"
+                className="w-full"
+              />
+            </div>
           </div>
         )}
 
@@ -123,12 +118,12 @@ export default function PDFClientViewer({ cotizacion, empresa }: { cotizacion: a
         >
           <i className="pi pi-file-pdf" style={{ fontSize: '3rem', color: 'var(--red-400)' }} />
           <div className="text-center">
-            <h3 className="m-0 mb-1">Vista previa no disponible</h3>
+            <h3 className="m-0 mb-1">Cotización #{cotizacion.numero}</h3>
             <p className="m-0 text-color-secondary text-sm">
-              Abre el PDF directamente en tu dispositivo o descárgalo con los botones de arriba.
+              Abre el PDF en tu dispositivo, descárgalo o compártelo directamente por WhatsApp.
             </p>
           </div>
-          {/* Botón "Abrir PDF" dentro de la tarjeta */}
+          {/* Botones de acción dentro de la tarjeta */}
           <MobilePDFOpener cotizacion={cotizacion} empresa={empresa} />
         </div>
       ) : (
