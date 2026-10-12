@@ -247,14 +247,60 @@ export function CotizacionForm({
     <InputText value={rowData.nombre} onChange={(e) => updateItem(options.rowIndex, "nombre", e.target.value)} className="w-full" />
   );
   const cantidadBodyTemplate = (rowData: any, options: any) => (
-    <InputNumber value={rowData.cantidad} onValueChange={(e) => updateItem(options.rowIndex, "cantidad", e.value || 0)} min={0.01} maxFractionDigits={2} className="w-full" inputClassName="w-full" />
+    <InputNumber 
+      value={rowData.cantidad} 
+      onValueChange={(e) => updateItem(options.rowIndex, "cantidad", e.value || 0)} 
+      min={0.01} 
+      minFractionDigits={0}
+      maxFractionDigits={2} 
+      locale="en-US"
+      className="w-full" 
+      inputClassName="w-full" 
+      onFocus={(e) => {
+        const target = e.target as HTMLInputElement;
+        target.select();
+        setTimeout(() => target.select(), 50);
+      }}
+    />
   );
   const precioBodyTemplate = (rowData: any, options: any) => (
-    <InputNumber value={rowData.precioUnitario} onValueChange={(e) => updateItem(options.rowIndex, "precioUnitario", e.value || 0)} mode="currency" currency="USD" locale="en-US" min={0} className="w-full" inputClassName="w-full" />
+    <div className="p-inputgroup w-full">
+      <span className="p-inputgroup-addon px-2" style={{ minWidth: '1.75rem', padding: '0 0.5rem' }}>$</span>
+      <InputNumber 
+        value={rowData.precioUnitario} 
+        onValueChange={(e) => updateItem(options.rowIndex, "precioUnitario", e.value ?? 0)} 
+        mode="decimal" 
+        minFractionDigits={0}
+        maxFractionDigits={2} 
+        locale="en-US" 
+        min={0} 
+        placeholder="0.00"
+        className="w-full" 
+        inputClassName="w-full" 
+        onFocus={(e) => {
+          const target = e.target as HTMLInputElement;
+          target.select();
+          setTimeout(() => target.select(), 50);
+        }}
+      />
+    </div>
   );
   const descuentoBodyTemplate = (rowData: any, options: any) => (
     <div className="p-inputgroup w-full">
-      <InputNumber value={rowData.descuento} onValueChange={(e) => updateItem(options.rowIndex, "descuento", e.value || 0)} min={0} inputClassName="w-full" />
+      <InputNumber 
+        value={rowData.descuento} 
+        onValueChange={(e) => updateItem(options.rowIndex, "descuento", e.value ?? 0)} 
+        min={0} 
+        minFractionDigits={0}
+        maxFractionDigits={2}
+        locale="en-US"
+        inputClassName="w-full" 
+        onFocus={(e) => {
+          const target = e.target as HTMLInputElement;
+          target.select();
+          setTimeout(() => target.select(), 50);
+        }}
+      />
       <span className="p-inputgroup-addon cursor-pointer bg-primary text-white" onClick={() => updateItem(options.rowIndex, "tipoDescuento", rowData.tipoDescuento === "PORCENTAJE" ? "VALOR" : "PORCENTAJE")}>
         {rowData.tipoDescuento === "PORCENTAJE" ? "%" : "$"}
       </span>
@@ -370,7 +416,7 @@ export function CotizacionForm({
             <Column header="Catálogo" body={productBodyTemplate} style={{ width: '20%', minWidth: '160px' }} />
             <Column header="Descripción" body={nombreBodyTemplate} style={{ width: '25%', minWidth: '180px' }} />
             <Column header="Cant." body={cantidadBodyTemplate} style={{ width: '10%', minWidth: '80px' }} />
-            <Column header="Precio U." body={precioBodyTemplate} style={{ width: '12%', minWidth: '110px' }} />
+            <Column header="Precio U." body={precioBodyTemplate} style={{ width: '12%', minWidth: '125px' }} />
             <Column header="Dscto." body={descuentoBodyTemplate} style={{ width: '12%', minWidth: '120px' }} />
             <Column header="IVA" body={ivaBodyTemplate} style={{ width: '8%', minWidth: '80px' }} />
             <Column header="Subtotal" body={itemSubtotalTemplate} style={{ width: '8%', minWidth: '100px' }} align="center"/>

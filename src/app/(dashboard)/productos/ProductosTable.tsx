@@ -205,16 +205,26 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
         </div>
         <div className="field">
           <label htmlFor="precioUnitario">Precio Unitario (USD) *</label>
-          <InputNumber 
-            id="precioUnitario" 
-            value={formData.precioUnitario} 
-            onValueChange={(e) => setFormData({ ...formData, precioUnitario: e.value || 0 })} 
-            mode="currency" 
-            currency="USD" 
-            locale="en-US" 
-            min={0}
-            required
-          />
+          <div className="p-inputgroup">
+            <span className="p-inputgroup-addon px-2" style={{ minWidth: '1.75rem', padding: '0 0.5rem' }}>$</span>
+            <InputNumber 
+              id="precioUnitario" 
+              value={formData.precioUnitario} 
+              onValueChange={(e) => setFormData({ ...formData, precioUnitario: e.value ?? 0 })} 
+              mode="decimal" 
+              minFractionDigits={0}
+              maxFractionDigits={2} 
+              locale="en-US" 
+              min={0}
+              placeholder="0.00"
+              onFocus={(e) => {
+                const target = e.target as HTMLInputElement;
+                target.select();
+                setTimeout(() => target.select(), 50);
+              }}
+              required
+            />
+          </div>
         </div>
         <div className="field mt-4">
           <label htmlFor="ivaAplicable">Tarifa IVA Aplicable *</label>
