@@ -311,8 +311,8 @@ export function CotizacionForm({
   const descuentoValorBodyTemplate = (rowData: any) => {
     const { descValor } = calcularItemValores(rowData);
     return (
-      <span className={`font-semibold ${descValor > 0 ? "text-red-500" : "text-500"}`}>
-        {descValor > 0 ? `-${new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(descValor)}` : '$0.00'}
+      <span className={` ${descValor > 0 ? "text-red-500" : "text-500"}`}>
+        {descValor > 0 ? `-${new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(descValor)}` : '$0,00'}
       </span>
     );
   };
@@ -322,7 +322,7 @@ export function CotizacionForm({
   const ivaValorBodyTemplate = (rowData: any) => {
     const { ivaValor } = calcularItemValores(rowData);
     return (
-      <span className={`font-semibold ${ivaValor > 0 ? "text-primary" : "text-500"}`}>
+      <span className={` ${ivaValor > 0 ? "text-primary" : "text-500"}`}>
         {new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(ivaValor)}
       </span>
     );

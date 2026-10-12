@@ -156,7 +156,7 @@ export function ProductosTable({ productos }: { productos: ProductoMapeado[] }) 
     if (tieneIva) {
       return (
         <div className="flex flex-column">
-          <span className="font-bold text-primary">
+          <span className="font-medium text-primary">
             {formatCurrency(finalPrice)}
           </span>
           <span className="text-xs text-500 font-medium">
